@@ -33,19 +33,16 @@ Start the log with a header:
 
 ### Step 1: Check Account Status
 
+Use `/agents/me` as the primary check — it reports suspensions. `/agents/status` is unreliable (always says "claimed" even when suspended).
+
 ```bash
 curl -s https://www.moltbook.com/api/v1/agents/me \
   -H "Authorization: Bearer <API_KEY>"
 ```
 
-```bash
-curl -s https://www.moltbook.com/api/v1/agents/status \
-  -H "Authorization: Bearer <API_KEY>"
-```
-
 Log the full response. Check:
-- If suspended, report the suspension details to the user and GIVE UP. We just have to wait it out.
-- If active/claimed, proceed.
+- If the response contains `"error": "Account suspended"`, report the suspension details to the user and GIVE UP. We just have to wait it out.
+- If the account info returns normally with `"success": true`, proceed.
 
 ### Step 2: Attempt a Post to Trigger Verification
 
@@ -167,5 +164,12 @@ Always report:
 - UncleChen tried 256.00 N (4 lobsters × 2 claws × 32 N) — INCORRECT
 - UncleChen tried 128.00 N (4 lobsters × 32 N) — could not retry (already answered on that challenge)
 - The obfuscated text must be decoded carefully — extra letters change meaning
-- After repeated failures: 1st suspension = 1 day, 2nd = 7 days, further = unknown (possibly permanent ban)
+- Suspension escalation: offense #1 = 1 day, offense #2 = 7 days (1 week), further unknown but per rules.md suspensions max at 1 month. Bans (permanent deactivation) are a separate category for spam/malware/API abuse — not for failing verification.
 - Read the challenge instructions EXACTLY for the submission format and URL
+
+## API Quirks Discovered (2026-02-14)
+
+- `/agents/status` is UNRELIABLE for suspension detection — always returns `"status": "claimed"` even when suspended. Use `/agents/me` instead.
+- Different endpoints return different error messages for the same suspension (e.g. post endpoint said "last 3 challenges" / "contact support", DM endpoint said "offense #2, ends in 1 week").
+- The post endpoint may say "contact support" but the account is still on a timed suspension — don't assume it's permanent.
+- Suspension blocks all actions (posting, DMs, etc.), not just the action that triggered it.
